@@ -1,4 +1,4 @@
-import userModel from "../DB/Models/user.model";
+import userModel from "../DB/Models/user.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken"; 
 
@@ -16,9 +16,9 @@ async function registerUser(req, res) {
 
     res.cookie("token", token)
     return res.status(201).json({message: "User created successfully" , user:{
-        email : user.email,
-        _id : user._id,
-        fullName: user.fullName
+        email : newUser.email,
+        _id : newUser._id,
+        fullName: newUser.fullName
     }})
 }
 async function loginUser(req, res) {
@@ -50,5 +50,6 @@ async function loginUser(req, res) {
 }
 
 module.exports = {
-    registerUser
+    registerUser,
+    loginUser
 }
