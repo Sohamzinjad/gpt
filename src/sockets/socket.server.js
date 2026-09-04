@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import cookie from "cookie"
+import * as cookie from "cookie"
 import jwt from "jsonwebtoken"
 
 function initSockerServer(httpServer) {
@@ -7,9 +7,9 @@ function initSockerServer(httpServer) {
 
     // Placeholder middleware – can be extended for auth/logging
     io.use((socket, next) => {
-        const cookies = cookie.parse(ocket.handshake.headers.cookie)
-        if(!cookie.token){
-            return next(new Error("Unauthorized"))
+        const cookies = cookie.parse(socket.handshake.headers.cookie || "");
+        if (!cookies.token) {
+            return next(new Error("Unauthorized"));
         }
         
         try{ 
