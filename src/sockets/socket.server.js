@@ -1,10 +1,24 @@
 import { Server } from "socket.io";
+import cookie from "cookie"
+import jwt from "jsonwebtoken"
 
 function initSockerServer(httpServer) {
     const io = new Server(httpServer, {});
 
     // Placeholder middleware – can be extended for auth/logging
     io.use((socket, next) => {
+        const cookies = cookie.parse(ocket.handshake.headers.cookie)
+        if(!cookie.token){
+            return next(new Error("Unauthorized"))
+        }
+        
+        try{ 
+            const verfiedToken = jwt.verify(cookies.token , process.env.JWT_SECRET)
+            socket.userId = verfiedToken.id 
+        }catch(err){
+            console.log(err)
+            return next(new Error("Unauthorized"))
+        }
         // For now just continue
         next();
     });
