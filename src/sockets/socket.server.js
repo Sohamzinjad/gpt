@@ -1,30 +1,66 @@
 import { Server } from "socket.io";
 import * as cookie from "cookie"
 import jwt from "jsonwebtoken"
+import userModel from "../DB/Models/user.model.js";
+import aiService from "../service/ai.service.js";
+import messageModel from "../DB/Models/message.model.js"; 
 
 function initSockerServer(httpServer) {
     const io = new Server(httpServer, {});
 
     // Placeholder middleware – can be extended for auth/logging
-    io.use((socket, next) => {
+    io.use(async (socket, next) => {
         const cookies = cookie.parse(socket.handshake.headers.cookie || "");
         if (!cookies.token) {
             return next(new Error("Unauthorized"));
+        
         }
         
-        try{ 
-            const verfiedToken = jwt.verify(cookies.token , process.env.JWT_SECRET)
-            socket.userId = verfiedToken.id 
-        }catch(err){
-            console.log(err)
-            return next(new Error("Unauthorized"))
+        try {
+            const verifiedToken = jwt.verify(cookies.token, process.env.JWT_SECRET);
+            const user = await userModel.findById(verifiedToken.id);
+            if (!user) {
+                throw new Error('User not found');
+            }
+            socket.userId = user._id;
+            next();
+        } catch (err) {
+            console.log(err);
+            return next(new Error('Unauthorized'));
         }
-        // For now just continue
-        next();
     });
 
     io.on("connection", (socket) => {
-        console.log("New User Connected", socket.id);
+        socket.on("join", async(messagePayload) => {
+            console.log(messagePayload)
+            await messageModel.create({
+                user : socket.user._id,
+                chatId : messagePayload.chatId,
+                sender : socket.userId,
+                receiver : messagePayload.receiver,
+                content : messagePayload.message,
+                role : "user"
+            }) 
+
+
+            const response = await aiService.genrateResponse(messagePayload.message)
+            await messageModel.create({
+                user : socket.user._id,
+                chatId : messagePayload.chatId,
+                sender : socket.user._id,
+                receiver : messagePayload.receiver,
+                content : response,
+                role : "model"
+            })
+
+            console.log(response)
+            
+            
+            socket.emit('ai-response',{
+                content : response,
+                chatId : messagePayload.chatId
+            })
+        })
     });
 }
 
