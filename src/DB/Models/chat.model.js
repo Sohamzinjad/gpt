@@ -2,27 +2,24 @@ import mongoose from "mongoose";
 
 
 const chatSchema = new mongoose.Schema({
-    user :{
-        type : mongoose.Schema.Types.ObjectId,
-        ref : "user",
-        required : true
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+        required: true
     },
-    title : {
-        type : String,
-        required : true
+    title: {
+        type: String,
+        required: true,
+        default: "New Chat"
     },
-    lastActivity : {
-        type : Date,
-        default : Date.now()
-    }   
+    lastActivity: {
+        type: Date,
+        default: Date.now
+    }
+}, {
+    timestamps: true
+});
 
-    
-} , {
-    timestamps : true
-} )
+const chatModel = mongoose.model("chat", chatSchema);
 
-
-
-const chatModel = mongoose.model("chat", chatSchema)
-
-export default chatModel
+export default chatModel;
