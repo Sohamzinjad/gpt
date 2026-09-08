@@ -41,11 +41,16 @@ function initSocketServer(httpServer) {
 
     io.on("connection", (socket) => {
         // Optional room join for multi-tab or room broadcast
+
+
+
         socket.on("join-chat", (chatId) => {
             if (chatId) {
                 socket.join(chatId.toString());
             }
         });
+
+
 
         // Common handler for incoming message
         const handleMessage = async (messagePayload) => {
@@ -53,6 +58,8 @@ function initSocketServer(httpServer) {
                 if (!messagePayload || !messagePayload.chatId || !messagePayload.message) {
                     return socket.emit("error", { message: "Both chatId and message are required" });
                 }
+
+
 
                 // 1. Save incoming user message
                 await messageModel.create({
@@ -65,9 +72,9 @@ function initSocketServer(httpServer) {
                 });
 
                 // 2. Fetch full conversation history
-                const chatHistory = await messageModel.find({
+                const chatHistory = (await messageModel.find({
                     chatId: messagePayload.chatId
-                }).sort({ createdAt: 1 });
+                }).sort({ createdAt: -1 }).limit(20).lean()).reverse();
 
                 const formattedHistory = chatHistory.map(item => ({
                     role: item.role === "model" ? "model" : "user",
