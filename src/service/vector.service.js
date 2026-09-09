@@ -15,4 +15,20 @@ async function createMemory({vectors , metadata , messageId}){
     })
 }
 
-export default gptCloneIndex;
+
+async function queryMemory({queryVector, limit = 5 , metadata , namespace}){
+    const data = await gptCloneIndex.query({
+        topK : limit,
+        vector: queryVector,
+        filter : metadata,
+        includeMetadata : true,
+
+    })
+
+    return data.matches
+}
+
+module.exports = {
+    createMemory,
+    queryMemory
+}

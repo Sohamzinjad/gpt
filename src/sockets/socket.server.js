@@ -5,6 +5,7 @@ import userModel from "../DB/Models/user.model.js";
 import * as aiService from "../service/ai.service.js";
 import messageModel from "../DB/Models/message.model.js";
 import chatModel from "../DB/Models/chat.model.js";
+import * as vectorService from "../service/vector.service.js";
 
 function initSocketServer(httpServer) {
     const io = new Server(httpServer, {
@@ -62,7 +63,7 @@ function initSocketServer(httpServer) {
 
 
                 // 1. Save incoming user message
-                await messageModel.create({
+                const message = await messageModel.create({
                     user: socket.userId,
                     chatId: messagePayload.chatId,
                     sender: socket.userId,
@@ -71,7 +72,28 @@ function initSocketServer(httpServer) {
                     role: "user"
                 });
 
-                // 2. Fetch full conversation history
+
+
+               
+                const vector = aiService.genrateVector(messagePayload.content)
+                await createMemory({
+                    vectors : vector,
+                    messageId : message._id,
+                    metadata : {
+                        chatId : messagePayload.chatId,
+                        userId : socket.userId,
+                    },
+                    
+                })
+
+                const memory = await queryMemory({
+                    queryVector : vector,
+                    limit : 3,
+                    metadata : {
+                       
+                    }
+                })
+
                 const chatHistory = (await messageModel.find({
                     chatId: messagePayload.chatId
                 }).sort({ createdAt: -1 }).limit(20).lean()).reverse();
@@ -88,7 +110,7 @@ function initSocketServer(httpServer) {
                 );
 
                 // 4. Save AI model response
-                await messageModel.create({
+                const responseMessage = await messageModel.create({
                     user: socket.userId,
                     chatId: messagePayload.chatId,
                     sender: socket.userId,
@@ -96,6 +118,17 @@ function initSocketServer(httpServer) {
                     content: response,
                     role: "model"
                 });
+
+                const responseVector = aiService.genrateVector(response)
+                await createMemory({
+                    vectors : responseVector,
+                    messageId : "9702057",
+                    metadata : {
+                        chatId : messagePayload.chatId,
+                        userId : socket.userId,
+                    },
+                    
+                })
 
                 // 5. Update chat's last activity
                 await chatModel.findByIdAndUpdate(messagePayload.chatId, { lastActivity: new Date() });
